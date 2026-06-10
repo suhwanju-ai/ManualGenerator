@@ -1,0 +1,35 @@
+{
+  "manifest_version": 3,
+  "name": "Manual Capture — 사용 매뉴얼 자동 생성",
+  "version": "0.4.0",
+  "description": "웹앱을 클릭하며 따라가면 스크린샷과 단계별 설명을 자동으로 만들어 매뉴얼(HTML)을 생성합니다.",
+  "permissions": [
+    "activeTab",
+    "tabs",
+    "storage",
+    "scripting",
+    "sidePanel",
+    "unlimitedStorage"
+  ],
+  "host_permissions": [
+    "<all_urls>",
+    "https://api.anthropic.com/*",
+    "https://openrouter.ai/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "Manual Capture 열기"
+  },
+  "side_panel": {
+    "default_path": "sidepanel.html"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}

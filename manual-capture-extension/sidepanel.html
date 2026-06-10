@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Manual Capture</title>
+    <style>
+      :root {
+        --ink: #1b1d22;
+        --muted: #6b7280;
+        --line: #e6e8ec;
+        --bg: #fbfbfc;
+        --card: #ffffff;
+        --accent: #e5484d;
+        --accent-weak: #fdecec;
+        --ok: #2f9e44;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Apple SD Gothic Neo",
+          "Malgun Gothic", sans-serif;
+        color: var(--ink);
+        background: var(--bg);
+        font-size: 13.5px;
+        line-height: 1.5;
+      }
+      .wrap { padding: 14px; }
+      h1 {
+        font-size: 15px;
+        margin: 0 0 2px;
+        letter-spacing: -0.01em;
+      }
+      .sub { color: var(--muted); font-size: 12px; margin: 0 0 14px; }
+
+      .card {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 12px;
+        margin-bottom: 12px;
+      }
+      label { display: block; font-weight: 600; font-size: 12px; margin: 0 0 4px; }
+      input[type="text"], input[type="password"], select {
+        width: 100%;
+        padding: 7px 9px;
+        border: 1px solid var(--line);
+        border-radius: 7px;
+        font-size: 13px;
+        margin-bottom: 9px;
+        background: #fff;
+        font-family: inherit;
+      }
+      input:focus, select:focus { outline: 2px solid var(--accent-weak); border-color: var(--accent); }
+      .field-hint { color: var(--muted); font-size: 11px; margin: -6px 0 9px; }
+
+      button {
+        font: inherit;
+        font-weight: 600;
+        border: none;
+        border-radius: 8px;
+        padding: 9px 12px;
+        cursor: pointer;
+        width: 100%;
+      }
+      button:disabled { opacity: 0.5; cursor: not-allowed; }
+      .btn-rec { background: var(--accent); color: #fff; font-size: 14px; padding: 12px; }
+      .btn-rec.recording { background: #fff; color: var(--accent); border: 2px solid var(--accent); }
+      .btn-secondary { background: #f0f1f3; color: var(--ink); }
+      .btn-ghost { background: transparent; color: var(--muted); }
+      .row { display: flex; gap: 8px; }
+      .row > button { width: auto; flex: 1; }
+
+      .status {
+        display: flex; align-items: center; gap: 8px;
+        font-size: 12px; color: var(--muted); margin-top: 8px;
+      }
+      .dot { width: 8px; height: 8px; border-radius: 50%; background: #c3c7cd; }
+      .dot.live { background: var(--accent); animation: pulse 1.2s infinite; }
+      @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+      .steps { display: flex; flex-direction: column; gap: 10px; }
+      .step {
+        border: 1px solid var(--line);
+        border-radius: 9px;
+        overflow: hidden;
+        background: var(--card);
+      }
+      .step img { width: 100%; display: block; border-bottom: 1px solid var(--line); }
+      .step-body { padding: 9px 10px; }
+      .step-head { display: flex; align-items: baseline; gap: 7px; margin-bottom: 4px; }
+      .step-num {
+        background: var(--accent); color: #fff; font-size: 11px; font-weight: 700;
+        border-radius: 5px; padding: 1px 6px; flex-shrink: 0;
+      }
+      .step-action { font-size: 11px; color: var(--muted); }
+      .step-desc {
+        font-size: 12.5px; width: 100%; border: none; resize: vertical;
+        min-height: 40px; padding: 4px 0; font-family: inherit;
+      }
+      .step-desc:focus { outline: none; }
+      .step-pending { color: var(--muted); font-style: italic; font-size: 12px; }
+      .del { background: none; border: none; color: var(--muted); cursor: pointer; width: auto; font-size: 11px; padding: 0; }
+
+      .empty { color: var(--muted); text-align: center; padding: 24px 8px; font-size: 12.5px; }
+      details summary { cursor: pointer; font-weight: 600; font-size: 12px; color: var(--muted); }
+      .toast { font-size: 12px; margin-top: 8px; }
+      .toast.err { color: var(--accent); }
+      .toast.ok { color: var(--ok); }
+      .progress { height: 4px; background: var(--line); border-radius: 4px; overflow: hidden; margin-top: 8px; display: none; }
+      .progress > div { height: 100%; background: var(--accent); width: 0; transition: width 0.2s; }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <h1>Manual Capture</h1>
+      <p class="sub">앱을 클릭하며 따라가면 단계가 쌓입니다. 끝나면 설명을 생성하고 매뉴얼로 내보내세요.</p>
+
+      <div class="card">
+        <button id="recBtn" class="btn-rec">● 녹화 시작</button>
+        <div class="status">
+          <span id="dot" class="dot"></span>
+          <span id="statusText">대기 중</span>
+        </div>
+      </div>
+
+      <div class="row" style="margin-bottom:12px;">
+        <button id="genBtn" class="btn-secondary">설명 생성</button>
+        <button id="exportBtn" class="btn-secondary">HTML 내보내기</button>
+      </div>
+      <div class="progress" id="progress"><div id="progressBar"></div></div>
+      <div id="toast" class="toast"></div>
+
+      <details class="card" id="settings">
+        <summary>설정</summary>
+        <div style="margin-top:10px;">
+          <label for="provider">AI 제공자</label>
+          <select id="provider">
+            <option value="claude">Claude (Anthropic 직접)</option>
+            <option value="openrouter">OpenRouter</option>
+            <option value="custom">OpenAI 호환 API (직접 입력)</option>
+          </select>
+          <div id="baseUrlWrap" style="display:none;">
+            <label for="baseUrl">API Base URL</label>
+            <input id="baseUrl" type="text" placeholder="https://api.example.com/v1" autocomplete="off" />
+            <p class="field-hint">/chat/completions 앞까지의 주소. 예: http://localhost:11434/v1 (Ollama)</p>
+          </div>
+          <label for="apiKey" id="apiKeyLabel">Claude API 키</label>
+          <input id="apiKey" type="password" placeholder="sk-ant-..." autocomplete="off" />
+          <p class="field-hint">이 기기에만 저장됩니다. 설명 생성에만 사용됩니다.</p>
+          <div id="orModelWrap" style="display:none;">
+            <label for="orModel" id="orModelLabel">모델</label>
+            <input id="orModel" type="text" placeholder="anthropic/claude-sonnet-4.6" autocomplete="off" />
+            <p class="field-hint" id="orModelHint">비워두면 기본 모델을 사용합니다. 비전(이미지) 지원 모델이어야 합니다.</p>
+          </div>
+          <label for="docTitle">문서 제목</label>
+          <input id="docTitle" type="text" placeholder="예: 프로젝트 관리 도구 사용 안내" />
+          <label for="audience">대상 독자 (선택)</label>
+          <input id="audience" type="text" placeholder="예: 처음 사용하는 일반 사용자" />
+          <button id="clearBtn" class="btn-ghost" style="margin-top:4px;">기록 전체 지우기</button>
+        </div>
+      </details>
+
+      <div id="stepsWrap">
+        <div class="empty" id="empty">아직 기록된 단계가 없습니다.</div>
+        <div class="steps" id="steps"></div>
+      </div>
+    </div>
+    <script src="sidepanel.js"></script>
+  </body>
+</html>
