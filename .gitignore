@@ -6,3 +6,6 @@
 
 # Windows 바로가기
 *.lnk
+
+# Claude Code 로컬 설정
+.claude/settings.local.json
